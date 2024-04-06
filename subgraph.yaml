@@ -24,6 +24,10 @@ dataSources:
       abis:
         - name: Issuer
           file: ./abis/Issuer.json
+        - name: Bond
+          file: ./abis/Bond.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: BondIssued(address)
           handler: handleBondIssued
@@ -36,3 +40,50 @@ dataSources:
         - event: VaultChanged(address,address)
           handler: handleVaultChanged
       file: ./src/issuer.ts
+templates:
+  - kind: ethereum/contract
+    name: BondTemplate
+    network: base
+    source:
+      abi: Bond
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Bond
+      abis:
+        - name: Bond
+          file: ./abis/Bond.json
+      eventHandlers:
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle
+        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleTransferBatch
+        - event: UpdateBondSupply(uint40)
+          handler: handleUpdateBondSupply
+        - event: SettleContract()
+          handler: handleSettleContract
+        - event: DecreaseMaturityPeriod(uint40)
+          handler: handleDecreaseMaturityPeriod
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransfer
+      file: ./src/bond.ts
+  - kind: ethereum/contract
+    name: ERC20Template
+    network: base
+    source:
+      abi: ERC20
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ERC20
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/erc20.ts

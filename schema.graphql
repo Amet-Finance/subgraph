@@ -40,3 +40,57 @@ type VaultChanged @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+type ERC20 @entity {
+  id: ID! # Token address
+  name: String!
+  symbol: String!
+  decimals: Int!
+}
+
+type User @entity {
+  id: ID! # User's address
+  tokenBalances: [TokenBalance!]! @derivedFrom(field: "user")
+}
+
+type TokenBalance @entity {
+  id: ID! # Combination of user address and tokenId
+  bond: Bond!
+  user: User! # Reference to the User entity
+  tokenId: BigInt!
+  balance: BigInt!
+  purchaseBlock: BigInt!
+}
+
+type Bond @entity {
+  id: ID!
+  issuer: User!
+  owner: User!
+  totalBonds: BigInt!
+  purchased: BigInt!
+  redeemed: BigInt!
+  isSettled: Boolean!
+  maturityPeriodInBlocks: BigInt!
+
+  purchaseToken: ERC20!
+  purchaseAmount: BigInt!
+
+  payoutToken: ERC20!
+  payoutAmount: BigInt!
+
+  payoutBalance: BigInt!
+
+  issuanceBlock: BigInt!
+  issuanceDate: BigInt!
+
+  actionLogs: [ActionLog!]! @derivedFrom(field: "bond")
+}
+
+type ActionLog @entity {
+  id: ID! # Transaction hash of the action
+  bond: Bond! # Link back to the Bond entity
+  from: Bytes!, # Address initiating the action
+  to: Bytes!, # Address receiving the action, or zero address for burn
+  count: BigInt!, # Count transferred
+  blockNumber: BigInt! # Block number where the action occurred
+}
