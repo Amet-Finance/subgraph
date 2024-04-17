@@ -1,5 +1,6 @@
-import {Address, BigDecimal, BigInt, ethereum} from '@graphprotocol/graph-ts'
+import {Address, BigInt, ethereum} from '@graphprotocol/graph-ts'
 import {
+    Bond as BondContract,
     DecreaseMaturityPeriod,
     OwnershipTransferred,
     SettleContract,
@@ -8,6 +9,50 @@ import {
     UpdateBondSupply
 } from "../generated/templates/BondTemplate/Bond"
 import {ActionLog, Bond, TokenBalance, User} from '../generated/schema'
+import {BondTemplate} from "../generated/templates";
+import {initiateToken} from "./erc20";
+import {BondIssued as BondIssuedEvent} from "../generated/Issuer/Issuer";
+import {isZeroAddress} from "./utils";
+
+export function initiateBond(event: BondIssuedEvent): void {
+    // Dynamically instantiate a new BondTemplate for the new bond contract
+    BondTemplate.create(event.params.bondAddress);
+
+    const bond = new Bond(event.params.bondAddress.toHex());
+    const bondContract = BondContract.bind(event.params.bondAddress)
+
+    const lifecycle = bondContract.lifecycle();
+
+    const issuer = updateUserIfNeeded(event.transaction.from);
+    if (!issuer) return;
+
+    bond.uri = bondContract.uri(BigInt.zero()).toString();
+    bond.issuer = issuer.id.toString();
+    bond.owner = issuer.id.toString();
+    bond.hash = event.transaction.hash
+
+    bond.totalBonds = lifecycle.getTotalBonds();
+    bond.purchased = BigInt.fromU64(0);
+    bond.redeemed = BigInt.fromU64(0);
+
+    bond.isSettled = false;
+    bond.maturityPeriodInBlocks = lifecycle.getMaturityPeriodInBlocks();
+
+    bond.purchaseToken = bondContract.purchaseToken().toHexString()
+    bond.purchaseAmount = bondContract.purchaseAmount()
+
+    bond.payoutToken = bondContract.payoutToken().toHexString()
+    bond.payoutAmount = bondContract.payoutAmount()
+
+    bond.issuanceBlock = event.block.number;
+    bond.issuanceDate = event.block.timestamp;
+
+    bond.payoutBalance = BigInt.zero();
+    bond.save();
+
+    initiateToken(bondContract.purchaseToken());
+    initiateToken(bondContract.payoutToken());
+}
 
 export function handleTransferSingle(event: TransferSingle): void {
 
@@ -147,12 +192,13 @@ function updateTokenBalance(address: Address, tokenId: BigInt, value: BigInt, is
         return;
     }
 
-    const bond = Bond.load(event.address.toHexString())
+    const bondAddress = event.address.toHex();
+    const bond = Bond.load(bondAddress)
     if (!bond) {
         return;
     }
 
-    const id = address.toHex() + '-' + tokenId.toString();
+    const id = `${bondAddress}-${tokenId.toHex()}`;
     let tokenBalance = TokenBalance.load(id);
 
     if (!tokenBalance) {
@@ -174,7 +220,3 @@ function updateTokenBalance(address: Address, tokenId: BigInt, value: BigInt, is
 }
 
 
-function isZeroAddress(address: Address): boolean {
-    let zeroAddress = Address.fromString('0x0000000000000000000000000000000000000000');
-    return address.equals(zeroAddress);
-}

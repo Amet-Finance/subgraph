@@ -5,10 +5,10 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ amet-finance-8453",
+    "deploy:production": "npm run codegen && npm run build && npm run deploy",
     "create-local": "graph create --node http://localhost:8020/ contracts",
     "remove-local": "graph remove --node http://localhost:8020/ contracts",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 contracts",
-    "test": "graph test"
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 contracts"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.69.1",

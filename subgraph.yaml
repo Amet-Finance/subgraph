@@ -10,17 +10,13 @@ dataSources:
     source:
       address: "0xE67BE43603260b0AD38bBfe89FcC6fDe6741e82A"
       abi: Issuer
-      startBlock: 12724500
+      startBlock: 12724501
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - BondIssued
-        - OwnershipTransferStarted
-        - OwnershipTransferred
-        - PauseChanged
-        - VaultChanged
+        - Issuer
       abis:
         - name: Issuer
           file: ./abis/Issuer.json
@@ -28,11 +24,11 @@ dataSources:
           file: ./abis/Bond.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Vault
+          file: ./abis/Vault.json
       eventHandlers:
         - event: BondIssued(address)
           handler: handleBondIssued
-        - event: OwnershipTransferStarted(indexed address,indexed address)
-          handler: handleOwnershipTransferStarted
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred
         - event: PauseChanged(bool)
@@ -55,6 +51,8 @@ templates:
       abis:
         - name: Bond
           file: ./abis/Bond.json
+        - name: Vault
+          file: ./abis/Vault.json
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
@@ -87,3 +85,27 @@ templates:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
       file: ./src/erc20.ts
+  - kind: ethereum/contract
+    name: VaultTemplate
+    network: base
+    source:
+      abi: Vault
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Vault
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+      eventHandlers:
+        - event: ReferralRecord(address,address,uint40)
+          handler: handleRecordReferral
+        - event: BondFeeDetailsUpdated(address,uint8,uint8,uint8)
+          handler: handleBondFeeDetailsUpdated
+        - event: ReferrerRewardClaimed(address,address,uint256)
+          handler: handleReferrerRewardClaimed
+        - event: IssuanceFeeChanged(uint256)
+          handler: handleIssuanceFeeChanged
+      file: ./src/vault.ts

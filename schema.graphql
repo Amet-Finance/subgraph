@@ -1,71 +1,16 @@
-type BondIssued @entity(immutable: true) {
-  id: Bytes!
-  bondAddress: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type OwnershipTransferStarted @entity(immutable: true) {
-  id: Bytes!
-  previousOwner: Bytes! # address
-  newOwner: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type OwnershipTransferred @entity(immutable: true) {
-  id: Bytes!
-  previousOwner: Bytes! # address
-  newOwner: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type PauseChanged @entity(immutable: true) {
-  id: Bytes!
-  isPaused: Boolean! # bool
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type VaultChanged @entity(immutable: true) {
-  id: Bytes!
-  previousVaultAddress: Bytes! # address
-  newVaultAddress: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type ERC20 @entity {
-  id: ID! # Token address
-  name: String!
-  symbol: String!
-  decimals: Int!
-}
-
-type User @entity {
-  id: ID! # User's address
-  tokenBalances: [TokenBalance!]! @derivedFrom(field: "user")
-}
-
-type TokenBalance @entity {
-  id: ID! # Combination of user address and tokenId
-  bond: Bond!
-  user: User! # Reference to the User entity
-  tokenId: BigInt!
-  balance: BigInt!
-  purchaseBlock: BigInt!
+type Issuer @entity {
+  id: ID! #Address of the issuer address
+  isPaused: Boolean!
+  vault: Vault!
+  owner: User!
 }
 
 type Bond @entity {
   id: ID!
   issuer: User!
   owner: User!
+  uri: String!
+  hash: Bytes!
   totalBonds: BigInt!
   purchased: BigInt!
   redeemed: BigInt!
@@ -84,6 +29,24 @@ type Bond @entity {
   issuanceDate: BigInt!
 
   actionLogs: [ActionLog!]! @derivedFrom(field: "bond")
+  referralRecords: [ReferralRecord!]! @derivedFrom(field: "bond")
+  referrerRewardsClaimed: [ReferrerRewardClaim!]! @derivedFrom(field: "bond")
+}
+
+type Vault @entity {
+  id: ID! # Address of the vault
+  issuanceFee: BigInt!
+  issuerAddress: Issuer!
+  purchaseRate: Int!
+  earlyRedemptionRate: Int!
+  referrerRewardRate: Int!
+}
+
+type User @entity {
+  id: ID! # User's address
+  tokenBalances: [TokenBalance!]! @derivedFrom(field: "user")
+  referralRecords: [ReferralRecord!]! @derivedFrom(field: "referrer")
+  referrerRewardsClaimed: [ReferrerRewardClaim!]! @derivedFrom(field: "referrer")
 }
 
 type ActionLog @entity {
@@ -94,3 +57,37 @@ type ActionLog @entity {
   count: BigInt!, # Count transferred
   blockNumber: BigInt! # Block number where the action occurred
 }
+
+type TokenBalance @entity {
+  id: ID! # Combination of user address and tokenId
+  bond: Bond!
+  user: User! # Reference to the User entity
+  tokenId: BigInt!
+  balance: BigInt!
+  purchaseBlock: BigInt!
+}
+
+type ReferralRecord @entity {
+  id: ID! # Transaction hash of the action
+  bond: Bond!
+  referrer: User!
+  quantity: Int!
+}
+
+type ReferrerRewardClaim @entity {
+  id: ID! # Transaction hash of the action
+  bond: Bond! # Bond Address
+  referrer: User! # Address of the claimer
+  amount: BigInt! # Amount in Purchase token
+}
+
+type ERC20 @entity {
+  id: ID! # Token address
+  name: String!
+  symbol: String!
+  decimals: Int!
+}
+
+
+
+
