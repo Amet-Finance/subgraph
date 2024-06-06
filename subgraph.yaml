@@ -8,9 +8,9 @@ dataSources:
     name: Issuer
     network: base
     source:
-      address: "0xE67BE43603260b0AD38bBfe89FcC6fDe6741e82A"
       abi: Issuer
-      startBlock: 12724501
+      address: "0xE67BE43603260b0AD38bBfe89FcC6fDe6741e82A"
+      startBlock: 12724500
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,10 +29,6 @@ dataSources:
       eventHandlers:
         - event: BondIssued(address)
           handler: handleBondIssued
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
-        - event: PauseChanged(bool)
-          handler: handlePauseChanged
         - event: VaultChanged(address,address)
           handler: handleVaultChanged
       file: ./src/issuer.ts
@@ -54,9 +50,11 @@ templates:
         - name: Vault
           file: ./abis/Vault.json
       eventHandlers:
-        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+        - event: TransferSingle(indexed address,indexed address,indexed
+            address,uint256,uint256)
           handler: handleTransferSingle
-        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+        - event: TransferBatch(indexed address,indexed address,indexed
+            address,uint256[],uint256[])
           handler: handleTransferBatch
         - event: UpdateBondSupply(uint40)
           handler: handleUpdateBondSupply
@@ -66,6 +64,8 @@ templates:
           handler: handleDecreaseMaturityPeriod
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransfer
+        - event: OwnershipTransferStarted(indexed address,indexed address)
+          handler: handleOwnershipTransferStarted
       file: ./src/bond.ts
   - kind: ethereum/contract
     name: ERC20Template

@@ -1,14 +1,9 @@
-type Issuer @entity {
-  id: ID! #Address of the issuer address
-  isPaused: Boolean!
-  vault: Vault!
-  owner: User!
-}
-
 type Bond @entity {
   id: ID!
   issuer: User!
   owner: User!
+  pendingOwner: User
+
   uri: String!
   hash: Bytes!
   totalBonds: BigInt!
@@ -28,6 +23,10 @@ type Bond @entity {
   issuanceBlock: BigInt!
   issuanceDate: BigInt!
 
+  purchaseRate: Int!
+  earlyRedemptionRate: Int!
+  referrerRewardRate: Int!
+
   actionLogs: [ActionLog!]! @derivedFrom(field: "bond")
   referralRecords: [ReferralRecord!]! @derivedFrom(field: "bond")
   referrerRewardsClaimed: [ReferrerRewardClaim!]! @derivedFrom(field: "bond")
@@ -36,7 +35,7 @@ type Bond @entity {
 type Vault @entity {
   id: ID! # Address of the vault
   issuanceFee: BigInt!
-  issuerAddress: Issuer!
+  issuerAddress: Bytes!
   purchaseRate: Int!
   earlyRedemptionRate: Int!
   referrerRewardRate: Int!

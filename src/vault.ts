@@ -7,17 +7,12 @@ import {
     Vault as VaultContract
 } from "../generated/templates/VaultTemplate/Vault";
 import {ReferralRecord, ReferrerRewardClaim, Vault} from "../generated/schema";
-import {updateUserIfNeeded} from "./bond";
+import {loadBond, updateUserIfNeeded} from "./bond";
 import {isZeroAddress} from "./utils";
 import {Address} from "@graphprotocol/graph-ts";
 
-function loadVault(address: Address): Vault {
-    let vault = Vault.load(address.toHexString())
-    if (!vault) {
-        initiateVault(address);
-        vault = Vault.load(address.toHexString()) as Vault
-    }
-    return vault;
+export function loadVault(address: Address): Vault {
+    return Vault.load(address.toHexString()) as Vault;
 }
 
 export function initiateVault(vaultAddress: Address): void {
@@ -28,7 +23,7 @@ export function initiateVault(vaultAddress: Address): void {
 
     const initialDetails = vaultContract.initialBondFeeDetails()
     vault.issuanceFee = vaultContract.issuanceFee();
-    vault.issuerAddress = vaultContract.issuerAddress().toHexString();
+    vault.issuerAddress = vaultContract.issuerAddress();
     vault.purchaseRate = initialDetails.getPurchaseRate();
     vault.earlyRedemptionRate = initialDetails.getEarlyRedemptionRate();
     vault.referrerRewardRate = initialDetails.getReferrerRewardRate();
@@ -50,7 +45,8 @@ export function handleRecordReferral(event: ReferralRecordEvent): void {
 export function handleBondFeeDetailsUpdated(event: BondFeeDetailsUpdatedEvent): void {
 
     if (isZeroAddress(event.params.bondAddress)) {
-        const vault = loadVault(event.params.bondAddress)
+
+        const vault = loadVault(event.address)
 
         vault.purchaseRate = event.params.purchaseRate;
         vault.earlyRedemptionRate = event.params.earlyRedemptionRate;
@@ -58,7 +54,14 @@ export function handleBondFeeDetailsUpdated(event: BondFeeDetailsUpdatedEvent): 
 
         vault.save()
     } else {
-        // update for bond if needed
+        const bond = loadBond(event.params.bondAddress)
+        if (!bond) return;
+
+        bond.purchaseRate = event.params.purchaseRate;
+        bond.earlyRedemptionRate = event.params.earlyRedemptionRate;
+        bond.referrerRewardRate = event.params.referrerRewardRate;
+
+        bond.save()
     }
 }
 
@@ -74,8 +77,7 @@ export function handleReferrerRewardClaimed(event: ReferrerRewardClaimedEvent): 
 }
 
 export function handleIssuanceFeeChanged(event: IssuanceFeeChangedEvent): void {
-    if (!event.transaction.to) return;
-    const vault = loadVault(event.transaction.to as Address)
+    const vault = loadVault(event.address)
 
     vault.issuanceFee = event.params.fee;
     vault.save()

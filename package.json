@@ -3,9 +3,16 @@
   "license": "UNLICENSED",
   "scripts": {
     "codegen": "graph codegen",
-    "build": "graph build",
-    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ amet-finance-8453",
-    "deploy:production": "npm run codegen && npm run build && npm run deploy",
+    "build:base": "graph build --network base",
+    "build:arbitrum-one": "graph build --network arbitrum-one",
+    "deploy:base": "graph deploy --node https://api.studio.thegraph.com/deploy/ amet-finance-8453",
+    "deploy:arbitrum-one": "graph deploy --node https://api.studio.thegraph.com/deploy/ amet-finance-42161",
+
+    "deploy:production:base": "bash auth/base.sh && npm run codegen && npm run build:base && npm run deploy:base",
+    "deploy:production:arbitrum-one": "bash auth/arbitrum-one.sh && npm run codegen && npm run build:arbitrum-one && npm run deploy:arbitrum-one",
+
+    "deploy:all": "npm run deploy:production:base && npm run deploy:production:arbitrum-one",
+
     "create-local": "graph create --node http://localhost:8020/ contracts",
     "remove-local": "graph remove --node http://localhost:8020/ contracts",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 contracts"
@@ -14,5 +21,7 @@
     "@graphprotocol/graph-cli": "0.69.1",
     "@graphprotocol/graph-ts": "0.32.0"
   },
-  "devDependencies": { "matchstick-as": "0.5.0" }
+  "devDependencies": {
+    "matchstick-as": "0.5.0"
+  }
 }

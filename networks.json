@@ -4,5 +4,11 @@
       "address": "0xE67BE43603260b0AD38bBfe89FcC6fDe6741e82A",
       "startBlock": 12724500
     }
+  },
+  "arbitrum-one": {
+    "Issuer": {
+      "address": "0x65A8d1EcC30351328BDf86612Ae31e46172c4DA9",
+      "startBlock": 218790445
+    }
   }
 }

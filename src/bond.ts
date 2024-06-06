@@ -1,8 +1,10 @@
 import {Address, BigInt, ethereum} from '@graphprotocol/graph-ts'
+
 import {
     Bond as BondContract,
     DecreaseMaturityPeriod,
     OwnershipTransferred,
+    OwnershipTransferStarted,
     SettleContract,
     TransferBatch,
     TransferSingle,
@@ -11,15 +13,18 @@ import {
 import {ActionLog, Bond, TokenBalance, User} from '../generated/schema'
 import {BondTemplate} from "../generated/templates";
 import {initiateToken} from "./erc20";
-import {BondIssued as BondIssuedEvent} from "../generated/Issuer/Issuer";
+import {BondIssued as BondIssuedEvent, Issuer} from "../generated/Issuer/Issuer";
 import {isZeroAddress} from "./utils";
+import {loadVault} from "./vault";
 
 export function initiateBond(event: BondIssuedEvent): void {
     // Dynamically instantiate a new BondTemplate for the new bond contract
     BondTemplate.create(event.params.bondAddress);
 
     const bond = new Bond(event.params.bondAddress.toHex());
-    const bondContract = BondContract.bind(event.params.bondAddress)
+    const bondContract = BondContract.bind(event.params.bondAddress);
+    const issuerContract = Issuer.bind(event.address);
+    const vaultContract = loadVault(issuerContract.vault())
 
     const lifecycle = bondContract.lifecycle();
 
@@ -27,8 +32,11 @@ export function initiateBond(event: BondIssuedEvent): void {
     if (!issuer) return;
 
     bond.uri = bondContract.uri(BigInt.zero()).toString();
+
     bond.issuer = issuer.id.toString();
     bond.owner = issuer.id.toString();
+    bond.pendingOwner = "";
+
     bond.hash = event.transaction.hash
 
     bond.totalBonds = lifecycle.getTotalBonds();
@@ -43,6 +51,10 @@ export function initiateBond(event: BondIssuedEvent): void {
 
     bond.payoutToken = bondContract.payoutToken().toHexString()
     bond.payoutAmount = bondContract.payoutAmount()
+
+    bond.purchaseRate = vaultContract.purchaseRate
+    bond.referrerRewardRate = vaultContract.referrerRewardRate
+    bond.earlyRedemptionRate = vaultContract.earlyRedemptionRate
 
     bond.issuanceBlock = event.block.number;
     bond.issuanceDate = event.block.timestamp;
@@ -161,7 +173,19 @@ export function handleOwnershipTransfer(event: OwnershipTransferred): void {
     const owner = updateUserIfNeeded(event.params.newOwner);
     if (!owner) return;
 
+    bond.pendingOwner = "";
     bond.owner = owner.id.toString();
+    bond.save()
+}
+
+export function handleOwnershipTransferStarted(event: OwnershipTransferStarted): void {
+    const bond = loadBond(event.address);
+    if (!bond) return;
+
+    const pendingOwner = updateUserIfNeeded(event.params.newOwner);
+    if (!pendingOwner) return;
+
+    bond.pendingOwner = pendingOwner.id.toString();
     bond.save()
 }
 
@@ -218,5 +242,3 @@ function updateTokenBalance(address: Address, tokenId: BigInt, value: BigInt, is
 
     tokenBalance.save();
 }
-
-
